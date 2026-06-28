@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AuraCode — Free AI Coding Agent & Workspace</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- JSZip for exporting projects -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+    <!-- Stylesheet -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+    <!-- App Shell -->
+    <div class="app-container">
+        
+        <!-- Left Sidebar: Explorer & Utilities -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-glow"></div>
+                <div class="logo">
+                    <i data-lucide="cpu" class="brand-icon"></i>
+                    <span>AuraCode</span>
+                </div>
+                <span class="badge">v1.0</span>
+            </div>
+
+            <!-- API Configuration -->
+            <div class="api-status-card" id="api-status-btn">
+                <div class="status-indicator-dot offline" id="api-dot"></div>
+                <div class="api-status-info">
+                    <span class="status-label">Gemini API Connection</span>
+                    <span class="status-value" id="api-status-text">Key Required</span>
+                </div>
+                <i data-lucide="key" class="key-icon"></i>
+            </div>
+
+            <!-- Workspace Navigation -->
+            <div class="sidebar-section">
+                <div class="section-header">
+                    <span>Virtual Workspace</span>
+                    <div class="section-actions">
+                        <button id="btn-new-file" title="New File"><i data-lucide="file-plus"></i></button>
+                        <button id="btn-new-folder" title="New Folder"><i data-lucide="folder-plus"></i></button>
+                        <button id="btn-import-files" title="Import File(s)"><i data-lucide="upload"></i></button>
+                        <button id="btn-import-folder" title="Import Folder"><i data-lucide="folder-open"></i></button>
+                    </div>
+                </div>
+                
+                <!-- File Tree Explorer -->
+                <div class="file-tree" id="file-explorer">
+                    <!-- Files will be injected dynamically by app.js -->
+                    <div class="empty-state-text">No files created yet.</div>
+                </div>
+            </div>
+
+            <!-- Quick Templates -->
+            <div class="sidebar-section templates-section">
+                <div class="section-header">
+                    <span>Quick Templates</span>
+                </div>
+                <div class="templates-list">
+                    <button class="template-item" data-template="html-css">
+                        <i data-lucide="html5" class="tpl-icon color-html"></i>
+                        <span>Responsive Dashboard</span>
+                    </button>
+                    <button class="template-item" data-template="react-landing">
+                        <i data-lucide="atom" class="tpl-icon color-react"></i>
+                        <span>React SPA Component</span>
+                    </button>
+                    <button class="template-item" data-template="python-scraper">
+                        <i data-lucide="terminal" class="tpl-icon color-py"></i>
+                        <span>Python Scraper</span>
+                    </button>
+                    <button class="template-item" data-template="node-express">
+                        <i data-lucide="server" class="tpl-icon color-node"></i>
+                        <span>Node Express API</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Sidebar Footer -->
+            <div class="sidebar-footer">
+                <a href="#" class="footer-link" id="btn-help-modal">
+                    <i data-lucide="help-circle"></i>
+                    <span>How it works</span>
+                </a>
+            </div>
+        </aside>
+
+        <!-- Center Panel: Agent Chat & Actions -->
+        <main class="main-panel">
+            <header class="panel-header">
+                <div class="panel-title">
+                    <i data-lucide="message-square-code"></i>
+                    <h2>Coding Agent Chat</h2>
+                </div>
+                <div class="agent-mode-selector">
+                    <span class="active-mode"><i data-lucide="shield-check"></i> Free Agent Active</span>
+                </div>
+            </header>
+
+            <!-- Chat Output & Logs -->
+            <div class="chat-container">
+                <div class="chat-messages" id="chat-messages">
+                    <!-- Welcome message -->
+                    <div class="message system-message">
+                        <div class="msg-avatar"><i data-lucide="bot"></i></div>
+                        <div class="msg-content">
+                            <h3>Welcome to AuraCode! 🚀</h3>
+                            <p>I am your local AI Code Writing Agent. I run directly in your browser using the Gemini API key to write, modify, and build files in the virtual workspace.</p>
+                            <div class="quick-start-tips">
+                                <strong>To get started:</strong>
+                                <ul>
+                                    <li>Provide your <a href="#" id="link-setup-key">Gemini API Key</a> (free from Google AI Studio).</li>
+                                    <li>Load one of the quick templates or describe what you want to build in the prompt.</li>
+                                    <li>See files generate automatically in the explorer. Click to view/edit them in the code editor on the right!</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Agent Status Monitor -->
+                <div class="agent-monitor hidden" id="agent-monitor">
+                    <div class="monitor-spinner"></div>
+                    <div class="monitor-details">
+                        <span class="monitor-title" id="monitor-title">Agent is thinking...</span>
+                        <div class="monitor-steps" id="monitor-steps">
+                            <!-- Injected dynamically -->
+                        </div>
+                    </div>
+                    <button class="btn-abort" id="btn-abort-agent" title="Abort Task">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chat Inputs -->
+            <div class="chat-input-area">
+                <div class="chat-actions">
+                    <button class="chat-action-btn" id="btn-clear-chat" title="Clear Chat history">
+                        <i data-lucide="trash-2"></i> Clear Chat
+                    </button>
+                    <button class="chat-action-btn" id="btn-explain-code" title="Ask Agent to explain active file">
+                        <i data-lucide="book-open"></i> Explain Code
+                    </button>
+                    <button class="chat-action-btn" id="btn-optimize-code" title="Ask Agent to optimize active file">
+                        <i data-lucide="sparkles"></i> Refactor
+                    </button>
+                </div>
+                <div class="input-wrapper">
+                    <textarea class="chat-input-field" id="chat-input" placeholder="Ask AuraCode to write or modify code... (e.g. 'Build a modern CSS login form')"></textarea>
+                    <button class="chat-send-btn" id="btn-send-message" disabled>
+                        <i data-lucide="arrow-up"></i>
+                    </button>
+                </div>
+                <p class="input-disclaimer">AuraCode integrates directly with Google Gemini Beta API endpoints. Your API key is stored locally in your browser.</p>
+            </div>
+        </main>
+
+        <!-- Right Panel: Code Workspace & Live Preview -->
+        <section class="editor-panel">
+            <header class="editor-header">
+                <div class="editor-tabs" id="editor-tabs">
+                    <!-- File tabs injected dynamically -->
+                    <div class="tab empty-tab active">No Active File</div>
+                </div>
+                <div class="editor-actions">
+                    <button class="btn-editor active" id="btn-mode-code" title="Code Editor" style="cursor: default;">
+                        <i data-lucide="code-2"></i><span>Code</span>
+                    </button>
+                    <button class="btn-editor-action" id="btn-copy-code" title="Copy active file content">
+                        <i data-lucide="copy"></i><span>Copy</span>
+                    </button>
+                    <button class="btn-editor-action primary" id="btn-download-project" title="Download project files as ZIP">
+                        <i data-lucide="download"></i><span>Export ZIP</span>
+                    </button>
+                </div>
+            </header>
+
+            <!-- Editor Work Area -->
+            <div class="editor-body">
+                <!-- Monaco Editor container -->
+                <div id="monaco-container" class="monaco-wrapper"></div>
+                
+                <!-- Live Preview iframe container (hidden by default) -->
+                <div id="preview-container" class="preview-wrapper hidden">
+                    <div class="preview-controls">
+                        <div class="preview-address-bar">
+                            <i data-lucide="globe"></i>
+                            <span id="preview-url">http://localhost:5173/</span>
+                        </div>
+                        <button class="btn-refresh-preview" id="btn-refresh-preview" title="Refresh Preview">
+                            <i data-lucide="rotate-cw"></i>
+                        </button>
+                    </div>
+                    <iframe id="preview-frame" sandbox="allow-scripts allow-modals" src="about:blank"></iframe>
+                </div>
+            </div>
+
+            <footer class="editor-footer">
+                <div class="editor-status-item">
+                    <i data-lucide="file-type"></i>
+                    <span id="editor-file-info">Ready</span>
+                </div>
+                <div class="editor-status-item">
+                    <i data-lucide="code"></i>
+                    <span id="editor-syntax-lang">Plain Text</span>
+                </div>
+            </footer>
+        </section>
+
+    </div>
+
+    <!-- Modals -->
+
+    <!-- API Key Dialog -->
+    <div class="modal-overlay hidden" id="api-modal">
+        <div class="modal-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i data-lucide="key" class="color-primary"></i>
+                    <h3>Connect Gemini API Key</h3>
+                </div>
+                <button class="modal-close" id="btn-close-api-modal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body">
+                <p>To run the agent for free, obtain an API key from Google AI Studio. AuraCode communicates directly with the Gemini API endpoints from your browser without a proxy server.</p>
+                
+                <div class="api-help-alert">
+                    <i data-lucide="info"></i>
+                    <div>
+                        <strong>Free Tier Available:</strong> Gemini 2.5 Flash and Gemini 1.5 Flash offer a free-of-charge API plan that supports coding and text workflows.
+                        <a href="https://aistudio.google.com/" target="_blank" class="text-link">Get a free key here <i data-lucide="external-link"></i></a>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="input-api-key">Gemini API Key</label>
+                    <div class="input-key-wrapper">
+                        <input type="password" id="input-api-key" value="AQ.Ab8RN6LBEA5OfFzymGjGN3QGzlMDUkLF5wCiR_Z71lExx4Z1rA" autocomplete="off" readonly disabled>
+                        <button id="btn-toggle-key-visibility" class="btn-icon" disabled><i data-lucide="eye"></i></button>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="select-model">Model Selection</label>
+                    <select id="select-model" class="modal-select">
+                        <option value="gemini-3.5-pro">Gemini 3.5 Pro</option>
+                        <option value="gemini-3.5-mini">Gemini 3.5 Mini</option>
+                        <option value="gemini-2.5-pro">Gemini 2.5 Pro</option>
+                        <option value="gemini-2.5-flash" selected>Gemini 2.5 Flash (Recommended - Fastest & Free Tier)</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Free Tier)</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Free Tier - More capable, slower)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer" style="display: none;">
+                <button class="btn-secondary" id="btn-clear-key">Remove Key</button>
+                <button class="btn-primary" id="btn-save-key">Save Connection</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- How It Works Dialog -->
+    <div class="modal-overlay hidden" id="help-modal">
+        <div class="modal-card help-card">
+            <div class="modal-header">
+                <div class="modal-title">
+                    <i data-lucide="help-circle" class="color-primary"></i>
+                    <h3>How AuraCode Works</h3>
+                </div>
+                <button class="modal-close" id="btn-close-help-modal"><i data-lucide="x"></i></button>
+            </div>
+            <div class="modal-body markdown-content">
+                <h4>1. Local Virtual Workspace</h4>
+                <p>All files you see in the sidebar are held in a virtual, in-memory filesystem. You can add, edit, and delete files manually, or let the AI Agent do it automatically.</p>
+                
+                <h4>2. The Agent Workflow</h4>
+                <p>When you ask the AI to perform a task, AuraCode constructs a detailed prompt including the request and your current directory files. The agent runs a structured cycle:</p>
+                <ul>
+                    <li><strong>Analysis:</strong> Reads your request and scans active workspace files.</li>
+                    <li><strong>Planning:</strong> Formulates which files need editing or creation.</li>
+                    <li><strong>Execution:</strong> Outputs updates in structured formats that are automatically parsed and written to your workspace.</li>
+                </ul>
+
+                <h4>3. Live Preview & Exports</h4>
+                <p>For web projects (HTML, CSS, JS), you can toggle the **Preview** tab. It spins up a sandboxed dynamic runner that simulates a local server and lets you interact with your code instantly. When you are ready, click **Export ZIP** to download the code to your computer.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-primary" id="btn-close-help-ok">Got it!</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monaco Loader Config -->
+    <script>
+        var require = {
+            paths: {
+                vs: 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs'
+            }
+        };
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.39.0/min/vs/loader.min.js"></script>
+    
+    <!-- Hidden File Upload Inputs -->
+    <input type="file" id="input-import-files" multiple style="display: none;">
+    <input type="file" id="input-import-folder" webkitdirectory directory multiple style="display: none;">
+
+    <!-- Code Files -->
+    <script src="agent.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
